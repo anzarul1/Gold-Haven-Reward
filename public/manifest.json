@@ -1,0 +1,24 @@
+{
+  "name": "Gold Haven Rewards",
+  "short_name": "Gold Haven",
+  "description": "Scan. Enter code. Win ₹1 to ₹5 cashback on Gold Haven Premium Dry Fruits.",
+  "start_url": "/redeem",
+  "display": "standalone",
+  "background_color": "#1c1c1f",
+  "theme_color": "#1c1c1f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

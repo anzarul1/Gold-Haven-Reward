@@ -1,0 +1,92 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: is owner
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Helper: is admin via custom claim
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    // ── users collection ──
+    // Users can only read their own user document.
+    // Client WRITES ARE STRICTLY FORBIDDEN to prevent tampering with walletBalance, isBlocked, totalEarned, etc.
+    // All updates are performed securely by the Next.js server via Firebase Admin SDK.
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false;
+    }
+
+    // ── codes collection ──
+    // CLIENT READS AND WRITES STRICTLY DENIED.
+    // Prevents scraping, enumeration, or tampering with codes.
+    // Lookups and redemptions occur only on the server within atomic transactions.
+    match /codes/{codeId} {
+      allow read, write: if false;
+    }
+
+    // ── batches collection ──
+    // Batches are strictly internal/admin metadata.
+    match /batches/{batchId} {
+      allow read, write: if false;
+    }
+
+    // ── redemptions collection ──
+    // Users can only read their own redemption history.
+    // Client writes are blocked; created exclusively by server upon valid redemption.
+    match /redemptions/{redemptionId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // ── walletLedger collection ──
+    // Users can only read their own ledger records.
+    // Client writes are blocked; all credits/debits are executed by server.
+    match /walletLedger/{ledgerId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // ── withdrawals collection ──
+    // Users can only read their own withdrawal history.
+    // Client writes are blocked; initiated & processed exclusively by server transactions.
+    match /withdrawals/{withdrawalId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // ── settings collection ──
+    // Client cannot read or write sensitive campaign configs (reward slabs, weights, budget).
+    // The server reads settings and applies logic.
+    match /settings/{docId} {
+      allow read, write: if false;
+    }
+
+    // ── dailyStats collection ──
+    // Budget & daily counters are server-managed.
+    match /dailyStats/{date} {
+      allow read, write: if false;
+    }
+
+    // ── redeemAttempts collection ──
+    // Fraud tracking and lockouts are server-managed.
+    match /redeemAttempts/{userId} {
+      allow read, write: if false;
+    }
+
+    // Default fallback: deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
